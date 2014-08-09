@@ -5,8 +5,6 @@ package Object::Anon;
 use strict;
 use warnings;
 
-use Sub::Install ();
-
 use Exporter qw(import);
 our @EXPORT = qw(anon);
 
@@ -30,11 +28,8 @@ sub _objectify {
             $class->overload::OVERLOAD($key => _value_sub($hash->{$key}));
         }
         else {
-            Sub::Install::install_sub({
-                code => _value_sub($hash->{$key}),
-                into => $class,
-                as   => $key,
-            });
+            no strict 'refs';
+            *{$class."::".$key} = _value_sub($hash->{$key});
         }
     }
 
