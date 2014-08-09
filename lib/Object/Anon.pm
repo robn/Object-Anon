@@ -5,48 +5,52 @@ package Object::Anon;
 use strict;
 use warnings;
 
-use Moose ();
-use Moose::Meta::Class ();
-use Moose::Util::TypeConstraints qw(class_type coerce from via);
+use Sub::Install ();
 
 use Exporter qw(import);
 our @EXPORT = qw(anon);
 
 sub anon (%) {
     my ($hash) = @_;
-    return _inflate_class_for($hash)->new_object($hash);
+    return _objectify($hash);
 }
 
 use overload ();
 my %overload_ops = map { $_ => 1 } map { split /\s+/, $_ } values %overload::ops;
 
-sub _inflate_class_for {
+my $anon_class_id = 0;
+
+sub _objectify {
     my ($hash) = @_;
 
-    my $meta = Moose::Meta::Class->create_anon_class;
-
-    class_type($meta->name);
-    coerce($meta->name => from 'HashRef' => via { $meta->new_object($_) });
+    my $class = "Object::Anon::__ANON__::".$anon_class_id++;
 
     for my $key (keys %$hash) {
-        my $value = $hash->{$key};
-
         if ($overload_ops{$key}) {
-            $meta->add_overloaded_operator($key => ref $value eq 'CODE' ? $value : sub { $value });
+            $class->overload::OVERLOAD($key => _value_sub($hash->{$key}));
         }
         else {
-            my @args = {
-                HASH  => sub { return (isa => _inflate_class_for($value)->name, coerce => 1) },
-                ARRAY => sub { return (isa => 'ArrayRef') },
-                CODE  => sub { return (isa => 'CodeRef', traits => ['Code'], reader => "___$key", handles => { $key => 'execute' }) },
-                ""    => sub { return (isa => 'Str') },
-            }->{ref $value}->();
-
-            $meta->add_attribute($key, is => 'ro', @args);
+            Sub::Install::install_sub({
+                code => _value_sub($hash->{$key}),
+                into => $class,
+                as   => $key,
+            });
         }
     }
 
-    return $meta;
+    return bless do { \my %o }, $class;
+}
+
+sub _value_sub {
+    my ($value) = @_;
+
+    do {
+        {
+            HASH  => sub { my $o = _objectify($value); sub { $o } },
+            ARRAY => sub { my @o = map { _value_sub($_)->() } @$value; sub { \@o } },
+            CODE  => sub { $value },
+        }->{ref $value} // sub { sub { $value } }
+    }->();
 }
 
 1;
