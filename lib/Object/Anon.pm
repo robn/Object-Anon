@@ -5,6 +5,8 @@ package Object::Anon;
 use strict;
 use warnings;
 
+use Carp qw(croak);
+
 use Exporter qw(import);
 our @EXPORT = qw(anon);
 
@@ -19,17 +21,23 @@ my %overload_ops = map { $_ => 1 } map { split /\s+/, $_ } values %overload::ops
 my $anon_class_id = 0;
 
 sub _objectify {
-    my ($hash) = @_;
+    my ($hash, $seen) = @_;
+    $seen ||= {};
+
+    if ($seen->{$hash}) {
+        croak "circular reference detected";
+    }
+    $seen->{$hash} = 1;
 
     my $class = "Object::Anon::__ANON__::".$anon_class_id++;
 
     for my $key (keys %$hash) {
         if ($overload_ops{$key}) {
-            $class->overload::OVERLOAD($key => _value_sub($hash->{$key}));
+            $class->overload::OVERLOAD($key => _value_sub($hash->{$key}, $seen));
         }
         else {
             no strict 'refs';
-            *{$class."::".$key} = _value_sub($hash->{$key});
+            *{$class."::".$key} = _value_sub($hash->{$key}, $seen);
         }
     }
 
@@ -37,12 +45,12 @@ sub _objectify {
 }
 
 sub _value_sub {
-    my ($value) = @_;
+    my ($value, $seen) = @_;
 
     do {
         {
-            HASH  => sub { my $o = _objectify($value); sub { $o } },
-            ARRAY => sub { my @o = map { _value_sub($_)->() } @$value; sub { \@o } },
+            HASH  => sub { my $o = _objectify($value, $seen); sub { $o } },
+            ARRAY => sub { my @o = map { _value_sub($_, $seen)->() } @$value; sub { \@o } },
             CODE  => sub { $value },
         }->{ref $value} // sub { sub { $value } }
     }->();
@@ -192,11 +200,6 @@ haven't had a strong need for it yet). If you have thoughts about any of this,
 please let me know!
 
 =over 4
-
-=item *
-
-Circular references. The right thing to do in the event of a circular reference
-is probably just to die.
 
 =item *
 
