@@ -52,7 +52,7 @@ sub _value_sub {
             HASH  => sub { my $o = _objectify($value, $seen); sub { $o } },
             ARRAY => sub { my @o = map { _value_sub($_, $seen)->() } @$value; sub { \@o } },
             CODE  => sub { $value },
-        }->{ref $value} // sub { sub { $value } }
+        }->{ref $value} || sub { sub { $value } }
     }->();
 }
 
