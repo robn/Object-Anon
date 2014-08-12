@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.002     2014-08-12 12:47:43+10:00 Australia/Melbourne
  - Detect circular references
 
 0.001     2014-08-09 21:21:50+10:00 Australia/Melbourne
