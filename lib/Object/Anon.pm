@@ -61,6 +61,8 @@ __END__
 
 =pod
 
+=for markdown [![Build Status](https://secure.travis-ci.org/robn/Object-Anon.png)](http://travis-ci.org/robn/Object-Anon)
+
 =encoding UTF-8
 
 =head1 NAME

@@ -1,3 +1,5 @@
+[![Build Status](https://secure.travis-ci.org/robn/Object-Anon.png)](http://travis-ci.org/robn/Object-Anon)
+
 # NAME
 
 Object::Anon - Create objects on the fly
