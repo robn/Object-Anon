@@ -29,7 +29,8 @@ sub _objectify {
     }
     $seen->{$hash} = 1;
 
-    my $class = "Object::Anon::__ANON__::".$anon_class_id++;
+    my $class_id = $anon_class_id++;
+    my $class = "Object::Anon::__ANON__::".$class_id;
 
     for my $key (keys %$hash) {
         if ($overload_ops{$key}) {
@@ -40,6 +41,15 @@ sub _objectify {
             *{$class."::".$key} = _value_sub($hash->{$key}, $seen);
         }
     }
+
+    do {
+      no strict 'refs';
+      *{$class."::DESTROY"} = sub {
+        my $symtab = *{$class.'::'}{HASH};
+        %$symtab = ();
+        delete *Object::Anon::__ANON__::{HASH}->{$class_id.'::'};
+      };
+    };
 
     return bless do { \my %o }, $class;
 }
@@ -216,15 +226,6 @@ cache key and not caching at all when coderefs are seen might work, but may be
 too limiting. Another approach might involve looking at the caller, on the
 basis that the same point in the code is probably returning the same structure
 each time.
-
-=item *
-
-Class cleanup. Every generated class is used once and then never touched again.
-I think the overhead is mostly in symbol table stuff, which is fairly small,
-but in a long-running program that could quickly add up. I think I'd like to
-add a destructor to generated classes that scrubs the symbol table. First
-however I need to find a way of measuring the amount of memory used by the
-symbol table,
 
 =item *
 

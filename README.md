@@ -143,12 +143,6 @@ cache key and not caching at all when coderefs are seen might work, but may be
 too limiting. Another approach might involve looking at the caller, on the
 basis that the same point in the code is probably returning the same structure
 each time.
-- Class cleanup. Every generated class is used once and then never touched again.
-I think the overhead is mostly in symbol table stuff, which is fairly small,
-but in a long-running program that could quickly add up. I think I'd like to
-add a destructor to generated classes that scrubs the symbol table. First
-however I need to find a way of measuring the amount of memory used by the
-symbol table,
 - Overload clashes. Some overloaded operators are common words. If a hash had a
 key of that name it would generate an overload, not a method of that name,
 which isn't want you want. The only ways I can think of to deal with this is to
