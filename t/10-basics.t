@@ -11,8 +11,7 @@ my $o;
 
 $o = anon {};
 ok(blessed $o, "anon returns an object");
-is(reftype $o, "HASH", "... that is a hash");
-is(scalar keys %$o, 0, "... with no keys");
+is(reftype $o, "REF", "... that is a ref");
 
 $o = anon { foo => "bar" };
 is($o->foo, "bar", "object method returns correct string");

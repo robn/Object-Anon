@@ -5,6 +5,9 @@ package Object::Anon;
 use strict;
 use warnings;
 
+use Package::Generator;
+use Package::Reaper;
+
 use Carp qw(croak);
 
 use Exporter qw(import);
@@ -18,8 +21,6 @@ sub anon (%) {
 use overload ();
 my %overload_ops = map { $_ => 1 } map { split /\s+/, $_ } values %overload::ops;
 
-my $anon_class_id = 0;
-
 sub _objectify {
     my ($hash, $seen) = @_;
     $seen ||= {};
@@ -29,29 +30,20 @@ sub _objectify {
     }
     $seen->{$hash} = 1;
 
-    my $class_id = $anon_class_id++;
-    my $class = "Object::Anon::__ANON__::".$class_id;
+    my $package = Package::Generator->new_package;
 
     for my $key (keys %$hash) {
         if ($overload_ops{$key}) {
-            $class->overload::OVERLOAD($key => _value_sub($hash->{$key}, $seen));
+            $package->overload::OVERLOAD($key => _value_sub($hash->{$key}, $seen));
         }
         else {
             no strict 'refs';
-            *{$class."::".$key} = _value_sub($hash->{$key}, $seen);
+            *{$package."::".$key} = _value_sub($hash->{$key}, $seen);
         }
     }
 
-    do {
-      no strict 'refs';
-      *{$class."::DESTROY"} = sub {
-        my $symtab = *{$class.'::'}{HASH};
-        %$symtab = ();
-        delete *Object::Anon::__ANON__::{HASH}->{$class_id.'::'};
-      };
-    };
-
-    return bless do { \my %o }, $class;
+    my $reaper  = Package::Reaper->new($package);
+    return bless \$reaper, $package;
 }
 
 sub _value_sub {

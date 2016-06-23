@@ -11,8 +11,7 @@ my $o;
 
 $o = anon { foo => { bar => "baz" } };
 ok(blessed $o->foo, "method returns an object");
-is(reftype $o->foo, "HASH", "... that is a hash");
-is(scalar keys %{$o->foo}, 0, "... with no keys");
+is(reftype $o, "REF", "... that is a ref");
 
 is($o->foo->bar, "baz", "deep method returns correct string");
 dies_ok { $o->foo->quux } "nonexistent deep method dies";

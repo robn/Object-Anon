@@ -11,8 +11,8 @@ my $o = anon { foo => "bar" };
 my $package = blessed $o;
 
 my $symtab = do { no strict 'refs'; *{$package.'::'}{HASH} };
-is keys %$symtab, 2, "symbol table has two keys";
-is_deeply [sort keys %$symtab], [qw(DESTROY foo)], "symbol table has expected keys";
+is keys %$symtab, 1, "symbol table has one key";
+is_deeply [sort keys %$symtab], [qw(foo)], "symbol table has expected keys";
 
 undef $o;
 
